@@ -15,5 +15,6 @@
     <string name="pause">Jeda</string>
     <string name="resume">Lanjut</string>
     <string name="stop">Berhenti</string>
+    <string name="save_audio">Simpan audio (M4A)</string>
     <string name="system_settings">Pengaturan suara perangkat</string>
 </resources>

@@ -160,6 +160,14 @@
                 android:text="@string/stop" />
         </LinearLayout>
 
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSave"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginTop="8dp"
+            android:text="@string/save_audio" />
+
         <TextView
             android:id="@+id/textStatus"
             android:layout_width="match_parent"

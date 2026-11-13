@@ -9,6 +9,7 @@ Aplikasi Android untuk mengubah teks menjadi suara Bahasa Indonesia. Memakai mes
 - Atur kecepatan dan nada
 - Baca, jeda, lanjut, berhenti; bagian yang sedang dibaca disorot
 - Rapikan teks otomatis: singkatan umum (yg, dgn, dll), angka ribuan, Rp, persen, emoji, simbol markdown
+- Simpan hasil suara ke file audio M4A (AAC) lewat tombol "Simpan audio", lokasi dipilih sendiri. M4A bisa diimpor ke CapCut, WhatsApp, dan hampir semua editor video. Tombol Berhenti membatalkan proses simpan
 - Terima teks dari aplikasi lain lewat menu Bagikan
 - Tombol tempel dari clipboard, teks terakhir tersimpan
 

@@ -5,7 +5,9 @@ import android.content.ClipboardManager
 import android.content.Intent
 import android.media.AudioAttributes
 import android.media.AudioManager
+import android.net.Uri
 import android.os.Bundle
+import android.provider.DocumentsContract
 import android.provider.Settings
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
@@ -20,6 +22,7 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
@@ -27,6 +30,8 @@ import androidx.core.view.WindowInsetsCompat
 import com.google.android.material.color.MaterialColors
 import com.google.android.material.slider.Slider
 import id.teksvoice.app.databinding.ActivityMainBinding
+import java.io.File
+import java.io.IOException
 import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
@@ -38,6 +43,15 @@ class MainActivity : AppCompatActivity() {
     private var tts: TextToSpeech? = null
     private var ttsReady = false
     private var needsRecheck = false
+
+    // Simpan audio
+    private var exporting = false
+    private var exporter: AudioExporter? = null
+    private var pendingExport: List<AudioExporter.Item>? = null
+    private val createDocument =
+        registerForActivityResult(ActivityResultContracts.CreateDocument("audio/mp4")) { uri ->
+            if (uri != null) startExport(uri) else pendingExport = null
+        }
 
     private var state = State.IDLE
     private var chunks: List<SpeechChunk> = emptyList()
@@ -106,6 +120,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
+        exporter?.cancel()
         session++
         tts?.stop()
         tts?.shutdown()
@@ -162,7 +177,10 @@ class MainActivity : AppCompatActivity() {
         binding.btnPaste.setOnClickListener { pasteFromClipboard() }
         binding.btnClear.setOnClickListener { binding.inputText.setText("") }
         binding.btnPlay.setOnClickListener { onPlayClicked() }
-        binding.btnStop.setOnClickListener { stopSpeaking("Dihentikan") }
+        binding.btnStop.setOnClickListener {
+            if (exporting) exporter?.cancel() else stopSpeaking("Dihentikan")
+        }
+        binding.btnSave.setOnClickListener { onSaveClicked() }
         binding.btnSystemSettings.setOnClickListener { openTtsSettings() }
 
         binding.sliderSpeed.addOnChangeListener { _, _, _ -> updateSliderLabels() }
@@ -185,7 +203,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateUi() {
-        binding.btnPlay.isEnabled = ttsReady
+        binding.btnPlay.isEnabled = ttsReady && !exporting
+        binding.btnSave.isEnabled = ttsReady && !exporting
         binding.btnPlay.setText(
             when (state) {
                 State.IDLE -> R.string.play
@@ -193,7 +212,7 @@ class MainActivity : AppCompatActivity() {
                 State.PAUSED -> R.string.resume
             }
         )
-        binding.btnStop.isEnabled = state != State.IDLE
+        binding.btnStop.isEnabled = state != State.IDLE || exporting
     }
 
     private fun setStatus(message: String) {
@@ -500,6 +519,79 @@ class MainActivity : AppCompatActivity() {
         val sessionId = parts[0].toIntOrNull() ?: return null
         val index = parts[1].toIntOrNull() ?: return null
         return Triple(id[0], sessionId, index)
+    }
+
+    // ---------------------------------------------------------------- Simpan audio
+
+    private fun onSaveClicked() {
+        if (!ttsReady || exporting) return
+        hideKeyboard()
+
+        val normalize = binding.checkNormalize.isChecked
+        val items = TextChunker.split(binding.inputText.text?.toString().orEmpty())
+            .mapNotNull { chunk ->
+                val text = if (normalize) TextNormalizer.normalize(chunk.text) else chunk.text
+                if (text.isBlank()) null else AudioExporter.Item(text, chunk.pauseAfterMs)
+            }
+        if (items.isEmpty()) {
+            setStatus("Tulis atau tempel teks dulu")
+            return
+        }
+
+        if (state != State.IDLE) stopSpeaking("Siap")
+        pendingExport = items
+        createDocument.launch("teks-ke-suara.m4a")
+    }
+
+    private fun startExport(uri: Uri) {
+        val engine = tts ?: return
+        val items = pendingExport ?: return
+        pendingExport = null
+
+        engine.setSpeechRate(binding.sliderSpeed.value)
+        engine.setPitch(binding.sliderPitch.value)
+
+        val job = AudioExporter(engine, cacheDir, progressListener)
+        exporter = job
+        exporting = true
+        updateUi()
+        setStatus("Membuat audio…")
+
+        Thread {
+            val temp = File(cacheDir, "teks-ke-suara-export.m4a")
+            val message = try {
+                job.export(items, temp) { done, total ->
+                    runOnUiThread {
+                        if (exporter === job) setStatus("Membuat audio… bagian $done dari $total")
+                    }
+                }
+                val out = contentResolver.openOutputStream(uri, "wt")
+                    ?: throw IOException("Tidak bisa menulis ke lokasi yang dipilih")
+                out.use { stream -> temp.inputStream().use { it.copyTo(stream) } }
+                "Audio tersimpan"
+            } catch (e: Exception) {
+                try {
+                    DocumentsContract.deleteDocument(contentResolver, uri)
+                } catch (ignored: Exception) {
+                    // file kosong mungkin tertinggal, tidak masalah
+                }
+                if (job.cancelled) {
+                    "Pembuatan audio dibatalkan"
+                } else {
+                    "Gagal menyimpan audio: ${e.message ?: "kesalahan tidak diketahui"}"
+                }
+            } finally {
+                temp.delete()
+            }
+            runOnUiThread {
+                if (exporter === job) {
+                    exporter = null
+                    exporting = false
+                    updateUi()
+                    setStatus(message)
+                }
+            }
+        }.start()
     }
 
     // ---------------------------------------------------------------- Sorotan teks

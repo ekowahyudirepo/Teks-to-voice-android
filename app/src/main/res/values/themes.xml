@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.TeksKeSuara" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">#00695C</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="colorPrimaryContainer">#B2DFDB</item>
+        <item name="colorOnPrimaryContainer">#00201C</item>
+    </style>
+</resources>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Teks ke Suara</string>
+    <string name="title">Teks ke Suara</string>
+    <string name="subtitle">Memakai mesin suara bawaan perangkat, tanpa layanan AI. Mendukung teks banyak baris.</string>
+    <string name="input_hint">Ketik atau tempel teks di sini…</string>
+    <string name="paste">Tempel</string>
+    <string name="clear">Hapus</string>
+    <string name="char_count">%1$d karakter</string>
+    <string name="label_voice">Suara</string>
+    <string name="label_speed">Kecepatan: %1$.1f×</string>
+    <string name="label_pitch">Nada: %1$.1f×</string>
+    <string name="normalize">Rapikan teks otomatis (singkatan, simbol, emoji)</string>
+    <string name="play">Baca</string>
+    <string name="pause">Jeda</string>
+    <string name="resume">Lanjut</string>
+    <string name="stop">Berhenti</string>
+    <string name="system_settings">Pengaturan suara perangkat</string>
+</resources>

@@ -28,3 +28,7 @@ gradle testDebugUnitTest assembleDebug
 ```
 
 APK ada di `app/build/outputs/apk/debug/app-debug.apk`.
+
+## Versi PC
+
+Versi Python untuk Windows/PC (MP3, suara neural edge-tts) ada di folder [`pc/`](pc/).
